@@ -1,0 +1,19 @@
+
+IMAGETYPE=physical
+OS=rhel7.2
+
+# Partition information
+BOOT=300
+ROOT=20480
+VAR_PART=20480
+TMP=20480
+SWAP=2048
+
+
+# Host information
+HOST=bipin1
+DOMAIN=example.com
+IP=10.10.0.99
+NM=255.255.255.0
+GW=10.10.0.1
+            

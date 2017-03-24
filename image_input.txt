@@ -1,0 +1,30 @@
+IMAGETYPE=vm
+OS=as7-u2
+# Disk and RAM information
+RAM=8192
+ROOTDISK=300
+
+
+# Partition information
+BOOT=300
+ROOT=20480
+VAR_PART=20480
+TMP=10240
+SWAP=2048 
+
+# Kickstart information
+KICKSTARTDIR=
+KSVARS=
+PATTERNDIR=
+TEMPLATEDIR=
+
+# Host information
+HOST=bipin_test.example.com
+DOMAIN=example.com
+OS=rhel7.1
+IP=10.10.0.5
+NM=255.255.255.0
+GW=10.10.0.254
+
+# Installer information
+INSTALLSERVER=

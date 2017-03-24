@@ -1,0 +1,55 @@
+install
+
+url --url={{ repo_url }}
+
+skipx
+
+text
+
+reboot
+
+lang en_US.UTF-8
+
+keyboard us
+
+selinux --enforcing
+
+firewall --enabled --ssh
+
+rootpw –iscrypted {{ root_password_hash }}
+
+authconfig --enableshadow --passalgo=sha512
+
+timezone --utc --ntpservers {{ ntp_servers|join(',') }} {{ timezone }}
+
+zerombr
+
+clearpart --all
+
+bootloader --location=mbr --timeout=5
+
+part /boot --asprimary --fstype="xfs" --size=1024 --ondisk=sda
+
+part pv.1   --size=1 --grow --ondisk=sda
+
+volgroup {{ hostname }}_system pv.1
+
+logvol / --vgname={{ inventory_hostname }}_system --size=2048 --name=root --fstype=xfs
+
+logvol /usr --vgname={{ inventory_hostname }}_system --size=2048 --name=usr --fstype=xfs
+
+logvol /var --vgname={{ inventory_hostname }}_system --size=2048 --name=var --fstype=xfs
+
+logvol /var/log --vgname={{ inventory_hostname }}_system --size=2048 --name=varlog --fstype=xfs
+
+logvol swap --vgname={{ inventory_hostname }}_system --recommended --name=swap --fstype=swap
+
+network --device=eth0 --bootproto=static --onboot=yes --activate --ip={{ ipv4_address }} --netmask={{ ipv4_netmask }} --gateway={{ ipv4_gateway }} --nameserver={{ dns_servers|join(',') }}
+
+%packages --excludedocs
+
+@Core
+
+vim-enhanced
+
+%end
