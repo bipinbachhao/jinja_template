@@ -1,3 +1,7 @@
+{%- if IMAGETYPE = 'physical' -%}
+{%- set imagetype = 'physical' -%}
+{%- else imagetype = 'vagrant' -%}
+{%- endif -%}
 install
 
 url --url={{ repo_url }}

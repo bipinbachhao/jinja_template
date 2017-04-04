@@ -18,20 +18,21 @@ distributed under the License is distributed on an 'AS IS' BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-s
 
 '''
 
 import argparse
 import os
+import shutil
+import sys
 from datetime import datetime
 from jinja2 import Environment, FileSystemLoader
 
 
 image_dir_path = os.getcwd()
-image_file_name = 'image_ksinput'
-templates_dir = os.getcwd()
-ks_template = 'ks.template'
+image_file_name = 'image_input'
+templates_dir = os.path.join(os.getcwd(), 'templates')
+ks_template_name = 'kickstart.template'
 
 
 time_now = datetime.now()
@@ -43,18 +44,16 @@ def main():
 
 
 def write_input_file(server_specs):
-    print 'here is the server specs: %s' % server_specs
     for s in server_specs.servers:
-        print 'server_name:%s.%s' % (s, server_specs.domain)
         server_image_dir = os.path.join(image_dir_path, '%s.%s' % (s, server_specs.domain))
-        ksfile = os.path.join(server_image_dir, image_file_name)
+        inputfile = os.path.join(server_image_dir, image_file_name)
         if os.path.isdir(server_image_dir):
-            if os.path.exists(ksfile):
+            if os.path.lexists(inputfile):
                 print 'found existing image_ksinput, backing up! '
-                os.rename(ksfile, ksfile + timestamp)
+                os.rename(inputfile, inputfile + timestamp)
         else:
             os.mkdir(server_image_dir)
-        with open(ksfile, 'a') as myinputfile:
+        with open(inputfile, 'a') as myinputfile:
             myinputfile.write('''
 IMAGETYPE=%(imagetype)s
 OS=%(os)s
@@ -88,10 +87,32 @@ GW=%(gateway)s
             }
                               )
 
+def keypair_convert(file_loc):
+    myvars = {}
+    with open(file_loc) as myfile:
+        for line in myfile:
+            tmp_line = line.rstrip()
+            if not tmp_line.startswith("#"):
+                name, var = line.partition("=")[::2]
+                myvars[name.strip()] = var.strip()
+    return myvars
+
 
 def write_kickstart_file(server_specs):
     print "Printing fist line inside write_kickstart_file function"
-    ks_environment = Environment(loader=FileSystemLoader(templates_dir))
+    for s in server_specs.servers:
+        server_image_dir = os.path.join(image_dir_path, '%s.%s' % (s, server_specs.domain))
+        ksfile = os.path.join(server_image_dir, image_file_name)
+        ks_environment = Environment(loader=FileSystemLoader(templates_dir))
+        ks_template = ks_environment.get_template(ks_template_name)
+    if os.path.exists(server_image_dir):
+        if os.path.exists(post_install_scripts_path):
+            if os.path.lexists(os.path.join(post_install_scripts_path, 'chef-client-installer.sh')):
+                shutil.copy2(os.path.join(post_install_scripts_path, 'chef-client-installer.sh'), server_image_dir)
+    else:
+        print 'Server image Dir does not exists. Exiting: %s' % server_image_dir
+        sys.exit()
+
 
 # Standard boilerplate to call the main() function to begin
 # the program
