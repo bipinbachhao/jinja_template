@@ -33,6 +33,7 @@ image_dir_path = os.getcwd()
 image_file_name = 'image_input'
 templates_dir = os.path.join(os.getcwd(), 'templates')
 ks_template_name = 'kickstart.template'
+post_install_scripts_path = os.path.join(os.getcwd(), 'post_install_scripts')
 
 
 time_now = datetime.now()
@@ -57,14 +58,12 @@ def write_input_file(server_specs):
             myinputfile.write('''
 IMAGETYPE=%(imagetype)s
 OS=%(os)s
-
 # Partition information
 BOOT=%(boot)s
 ROOT=%(root)s
 VAR_PART=%(var)s
 TMP=%(tmp)s
-SWAP=%(swap)skickstart jinja2 python templatecd g
-
+SWAP=%(swap)s
 # Host information
 HOST=%(host)s
 DOMAIN=%(domain)s
@@ -102,16 +101,23 @@ def write_kickstart_file(server_specs):
     print "Printing fist line inside write_kickstart_file function"
     for s in server_specs.servers:
         server_image_dir = os.path.join(image_dir_path, '%s.%s' % (s, server_specs.domain))
-        ksfile = os.path.join(server_image_dir, image_file_name)
+        inputfile = os.path.join(server_image_dir, image_file_name)
+        kscfg_file = os.path.join(server_image_dir, 'ks.cfg')
         ks_environment = Environment(loader=FileSystemLoader(templates_dir))
         ks_template = ks_environment.get_template(ks_template_name)
-    if os.path.exists(server_image_dir):
-        if os.path.exists(post_install_scripts_path):
-            if os.path.lexists(os.path.join(post_install_scripts_path, 'chef-client-installer.sh')):
-                shutil.copy2(os.path.join(post_install_scripts_path, 'chef-client-installer.sh'), server_image_dir)
-    else:
-        print 'Server image Dir does not exists. Exiting: %s' % server_image_dir
-        sys.exit()
+        if os.path.exists(server_image_dir):
+            if os.path.exists(post_install_scripts_path):
+                if os.path.lexists(os.path.join(post_install_scripts_path, 'chef-client-installer.sh')):
+                    shutil.copy2(os.path.join(post_install_scripts_path, 'chef-client-installer.sh'), server_image_dir)
+            else:
+                print 'Post install scripts directory does not exists Exiting: %s' % post_install_scripts_path
+                sys.exit()
+        else:
+            print 'Server image Dir does not exists. Exiting: %s' % server_image_dir
+            sys.exit()
+        server_input = keypair_convert(inputfile)
+        with open(kscfg_file, 'w') as kscfg_output:
+            kscfg_output.write(ks_template.render(**server_input))
 
 
 # Standard boilerplate to call the main() function to begin
@@ -120,7 +126,6 @@ def write_kickstart_file(server_specs):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Pass the arguments to pass the information to create kickstart file')
     parser.add_argument('-r', '--release', required=True, help='OS Release version, rhel 6.7')
-    parser.add_argument('-i','--image', default='physical', help='Image type either VM, physical, Box. Default=physical')
     parser.add_argument('-s', '--servers', nargs='+', required=True)
     parser.add_argument('-c', '--create', action='store_true', help='Create a kickstart file, boot image or box image')
     parser.add_argument('-d', '--domain', default='example.com', help='Domain of the server. Default: example.com')
@@ -132,6 +137,13 @@ if __name__ == '__main__':
     parser.add_argument('-vp', '--var-part', default='20480', help='Custom var partition size. Default: 20480')
     parser.add_argument('-sp', '--swap-part', default='2048', help='Custom swap partition size. Default: 2048')
     parser.add_argument('-tp', '--tmp-part', default='20480', help='Custom tmp parition size. Default:20480')
+    parser.add_argument('-os', '--os-name', default='centos', help='OS name Default: centos')
+    parser.add_argument('--timezone', default='America/Indiana/Indianapolis',
+                        help='Default: America/Indiana/Indianapolis')
+    parser.add_argument('--enable-selinux', action='store_true', default=False, help='Enable SELinux, Default: False')
+    parser.add_argument('--root-passwd', default='$5$CurWicWfoFibljY$r4SwMWFh.Fd7Z7HEA2xncS2dQ3XaqR.T.VyCFaF/Vv0', help='Root Password Hash- Reset@12345')
+    parser.add_argument('--workstation', action='store_true', default=False,
+                        help='If its a Workstation. Default: False, This will be server')
 
     args = parser.parse_args()
 
