@@ -1,12 +1,17 @@
-{%- if IMAGETYPE = 'physical' -%}
-{%- set imagetype = 'physical' -%}
-{%- else imagetype = 'vagrant' -%}
+{%- if WORKSTATION == 'True' -%}
+{%- set imagetype = 'workstation' -%}
+{%- set graphics = 'xconfig --startxonboot --defaultdesktop gnome' -%}
+{%- else -%}
+{%- set imagetype = 'server' -%}
+{%- set graphics = 'skipx' -%}
 {%- endif -%}
+
+# Server name is {{ HOST }}
 install
 
 url --url={{ repo_url }}
 
-skipx
+{{ graphics }}
 
 text
 
@@ -16,14 +21,18 @@ lang en_US.UTF-8
 
 keyboard us
 
-#selinux --enforcing
-selinux {{ selinux }}
+{%- if SELINUX == 'True' %}
+selinux --enforcing
+{%- else %}
+selinux --disabled
+{%- endif %}
+
 
 firewall --enabled --ssh
 
-rootpw –iscrypted {{ root_password_hash }}
+rootpw –iscrypted {{ ROOTPASSWD }}
 
-authconfig --enableshadow --passalgo=sha512
+authconfig --enableshadow --passalgo=sha256
 
 timezone --utc --ntpservers {{ ntp_servers|join(',') }} {{ timezone }}
 

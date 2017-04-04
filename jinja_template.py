@@ -50,14 +50,18 @@ def write_input_file(server_specs):
         inputfile = os.path.join(server_image_dir, image_file_name)
         if os.path.isdir(server_image_dir):
             if os.path.lexists(inputfile):
-                print 'found existing image_ksinput, backing up! '
+                print 'found existing image_input, backing up! '
                 os.rename(inputfile, inputfile + timestamp)
         else:
             os.mkdir(server_image_dir)
         with open(inputfile, 'a') as myinputfile:
             myinputfile.write('''
-IMAGETYPE=%(imagetype)s
 OS=%(os)s
+RELEASE=%(release)s
+MAJOR_RELEASE=%(major_release)s
+MIN_RELEASE=%(min_release)s
+SELINUX=%(selinux)s
+WORKSTATION=%(workstation)s
 # Partition information
 BOOT=%(boot)s
 ROOT=%(root)s
@@ -65,14 +69,21 @@ VAR_PART=%(var)s
 TMP=%(tmp)s
 SWAP=%(swap)s
 # Host information
-HOST=%(host)s
+HOST=%(host)s.%(domain)s
 DOMAIN=%(domain)s
 IP=%(ip)s
 NM=%(netmask)s
 GW=%(gateway)s
+DHCP=%(dhcp)s
+ROOTPASSWD=%(rootpasswd)s
+TIMEZONE=%(timezone)s
             '''%{
-                'imagetype': server_specs.image,
-                'os': server_specs.release,
+                'release': server_specs.release,
+                'os': server_specs.os_name,
+                'major_release': str(server_specs.release).split('.')[0],
+                'min_release': str(server_specs.release).split('.')[1],
+                'selinux': server_specs.enable_selinux,
+                'workstation': server_specs.workstation,
                 'boot': server_specs.boot_part,
                 'root': server_specs.root_part,
                 'var': server_specs.var_part,
@@ -83,6 +94,9 @@ GW=%(gateway)s
                 'ip': server_specs.ipaddr,
                 'netmask': server_specs.netmask,
                 'gateway': server_specs.gateway,
+                'dhcp': server_specs.dhcp,
+                'rootpasswd': server_specs.root_passwd,
+                'timezone': server_specs.timezone,
             }
                               )
 
@@ -125,7 +139,7 @@ def write_kickstart_file(server_specs):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Pass the arguments to pass the information to create kickstart file')
-    parser.add_argument('-r', '--release', required=True, help='OS Release version, rhel 6.7')
+    parser.add_argument('-r', '--release', required=True, type=float, help='OS Release version, rhel 6.7')
     parser.add_argument('-s', '--servers', nargs='+', required=True)
     parser.add_argument('-c', '--create', action='store_true', help='Create a kickstart file, boot image or box image')
     parser.add_argument('-d', '--domain', default='example.com', help='Domain of the server. Default: example.com')
@@ -138,6 +152,7 @@ if __name__ == '__main__':
     parser.add_argument('-sp', '--swap-part', default='2048', help='Custom swap partition size. Default: 2048')
     parser.add_argument('-tp', '--tmp-part', default='20480', help='Custom tmp parition size. Default:20480')
     parser.add_argument('-os', '--os-name', default='centos', help='OS name Default: centos')
+    parser.add_argument('--dhcp', action='store_true', default=False, help='Use DHCP')
     parser.add_argument('--timezone', default='America/Indiana/Indianapolis',
                         help='Default: America/Indiana/Indianapolis')
     parser.add_argument('--enable-selinux', action='store_true', default=False, help='Enable SELinux, Default: False')
@@ -151,16 +166,20 @@ if __name__ == '__main__':
     for ser in args.servers:
         print '  %s.%s' % (ser, args.domain)
     print 'OS Release: %s' % args.release
-    print 'Image Type: %s' % args.image
     print 'Create kickstart Files: %s' % args.create
     print 'Domain For the Server: %s' % args.domain
     print 'IP Address of the Server: %s' % args.ipaddr
-    print 'Netmask for the Server: %s' % args.netmask
+    print 'NetMask for the Server: %s' % args.netmask
     print 'Gateway for the Server: %s' % args.gateway
     print 'Root partition size: %s' % args.root_part
-    print 'Boot partution size: %s' % args.boot_part
+    print 'Boot partition size: %s' % args.boot_part
     print 'Var partition size: %s' % args.var_part
     print 'SWAP partition size: %s' % args.swap_part
     print 'TMP partition size: %s' % args.tmp_part
+    print 'OS Name: %s' % args.os_name
+    print 'DHCP: %s' % args.dhcp
+    print 'TimeZone: %s' % args.timezone
+    print 'Enable SELinux: %s' % args.enable_selinux
+    print 'WorkStation: %s' % args.workstation
     main()
     write_input_file(args)
